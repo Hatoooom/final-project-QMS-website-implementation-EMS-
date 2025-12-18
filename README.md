@@ -7,17 +7,6 @@
 
 > A full-stack Emergency Management System simulation designed to enforce **ISO 22320** operational standards, featuring automated safety protocols and real-time asset tracking.
 
----
-
-## 📖 Table of Contents
-1. [Project Overview](#-project-overview)
-2. [Key Features](#-key-features)
-3. [Tech Stack](#-tech-stack)
-4. [Installation & Setup](#-installation--setup)
-5. [Detailed Project Report (QMS)](#-detailed-project-report-qms)
-    - [Applied Standards](#1-applied-qms-standards)
-    - [The Challenge (The "Zombie Unit")](#2-challenge-identification)
-    - [The Resolution (Algorithmic Gate)](#3-resolution--implementation)
 
 ---
 
