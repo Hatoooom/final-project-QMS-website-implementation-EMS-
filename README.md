@@ -62,7 +62,7 @@ cd ems-iso-cmd
 
 ### 2.Install Dependencies
 ```bash
-pip install flask psycopg2-binary
+pip install requirements.txt
 ```
 
 ### 3. Configure Database
