@@ -26,7 +26,7 @@ The system integrates:
 * **🗺️ Command Map:** A geospatial dashboard showing "Single Source of Truth" for all units.
 * **🚑 Fleet Readiness Logic:** Monitors Fuel, Health, and Supply levels dynamically.
 * **⏱️ Precision Logging:** Records $T_0$ (Call), $T_1$ (Dispatch), $T_2$ (Arrival), and $T_3$ (Return).
-* **🛡️ Automated QMS Gate:** prevents the dispatch of unsafe vehicles (e.g., low fuel or damaged hull), ensuring adherence to **ISO 22320** safety protocols.
+* **🛡️ Automated QMS Gate:** prevents the dispatch of unsafe vehicles (e.g., low fuel or damaged hull).
 
 ---
 
