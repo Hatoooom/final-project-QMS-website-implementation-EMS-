@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/Status-Complete-success)
 ![Standard](https://img.shields.io/badge/ISO-22320%20Compliant-blue)
 ![Python](https://img.shields.io/badge/Built%20With-Flask-yellow)
-![License](https://img.shields.io/badge/License-MIT-green)
+
 
 > A full-stack Emergency Management System simulation designed to enforce **ISO 22320** operational standards, featuring automated safety protocols and real-time asset tracking.
 
@@ -52,11 +52,6 @@ cd ems-iso-cmd
 ### 2.Install Dependencies
 ```bash
 pip install requirements.txt
-```
-
-### 3. Configure Database
-```bash
-DATABASE_URL = "postgres://user:pass@ep-cool-project.aws.neon.tech/neondb?sslmode=require"
 ```
 
 ### 4. Run the Application
