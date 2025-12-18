@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMS Command | ISO 9001 & 22320</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg-dark: #0f172a; --bg-panel: #1e293b; --accent: #3b82f6; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --text: #f8fafc; --border: #334155; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; }
+        .nav-btn { background: transparent; color: #94a3b8; border: none; padding: 15px; text-align: left; width: 100%; cursor: pointer; border-radius: 6px; margin-bottom: 5px; }
+        .nav-btn.active, .nav-btn:hover { background: var(--accent); color: white; }
+        
+        /* CONTENT */
+        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; }
+        .view-section { display: none; flex: 1; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .view-section.active-view { display: flex; }
+        #view-dashboard { padding: 0; overflow: hidden; }
+
+        /* COMPONENTS */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+        .tag-pass { background: rgba(16,185,129,0.2); color: var(--success); padding: 2px 6px; border-radius: 4px; font-size: 10px; border: 1px solid var(--success); }
+        .tag-fail { background: rgba(239,68,68,0.2); color: var(--danger); padding: 2px 6px; border-radius: 4px; font-size: 10px; border: 1px solid var(--danger); }
+        .tag-warn { background: rgba(245,158,11,0.2); color: var(--warning); padding: 2px 6px; border-radius: 4px; font-size: 10px; border: 1px solid var(--warning); }
+        
+        .bar-container { background: #334155; height: 6px; border-radius: 4px; margin: 8px 0; overflow: hidden; }
+        .bar-fill { height: 100%; transition: width 0.5s ease; }
+        
+        .maint-btn { background: #0f172a; color: #94a3b8; border: 1px solid var(--border); padding: 8px; flex: 1; cursor: pointer; border-radius: 4px; }
+        .maint-btn:hover { background: #333; color: white; }
+        
+        /* KPI BOXES */
+        .kpi-box { background: #0f172a; border: 1px solid var(--border); border-radius: 6px; padding: 15px; text-align: center; }
+        .kpi-val { font-size: 24px; font-weight: bold; color: var(--accent); margin: 5px 0; }
+        .kpi-lbl { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+
+        /* QMS TEXT REPORT STYLING */
+        .qms-doc { max-width: 800px; margin: 0 auto; line-height: 1.6; color: #cbd5e1; }
+        .qms-doc h2 { color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-top: 40px; }
+        .qms-doc h3 { color: var(--accent); margin-top: 25px; margin-bottom: 5px; font-size: 1.1em; }
+        .qms-doc p { margin-bottom: 15px; text-align: justify; }
+        .qms-doc ul { margin-bottom: 20px; padding-left: 20px; }
+        .qms-doc li { margin-bottom: 8px; }
+        
+        .qms-highlight { background: rgba(239,68,68,0.1); border-left: 4px solid var(--danger); padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .qms-highlight-warn { background: rgba(245,158,11,0.1); border-left: 4px solid var(--warning); padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0; }
+        .qms-process-step { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 20px; }
+        .step-num { background: var(--accent); color: white; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; flex-shrink: 0; }
+
+        /* SLIDER STYLING */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; background: var(--accent); cursor: pointer; margin-top: -5px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #334155; border-radius: 2px; }
+        
+        /* ANIMATIONS */
+        .btn-critical { background: var(--danger) !important; color: white !important; animation: btn-pulse 1s infinite; border:none; }
+        @keyframes btn-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.2); } 100% { transform: translate(-50%, -50%) scale(1); } }
+
+        /* MAP */
+        #map-container { flex: 1; background: #0f172a; position: relative; background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 20px 20px; }
+        .map-marker { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; transition: top 0.5s, left 0.5s; z-index: 10; }
+        .ambulance-icon { font-size: 20px; padding: 6px; border-radius: 50%; border: 2px solid var(--success); background: rgba(16,185,129,0.2); color: var(--success); box-shadow: 0 0 10px var(--success); }
+        .ambulance-icon.busy { border-color: var(--warning); color: var(--warning); background: rgba(245,158,11,0.2); box-shadow: 0 0 10px var(--warning); }
+        .incident-icon { font-size: 24px; color: var(--danger); animation: pulse 1s infinite; z-index: 1; }
+        .incident-icon.pending { color: var(--warning); opacity: 0.7; animation: none; }
+        
+        /* LOG TABLE */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
+        .log-panel { height: 250px; background: var(--bg-panel); border-top: 1px solid var(--border); overflow-y: auto; }
+        .toast { position: fixed; top: 20px; right: 20px; background: var(--bg-panel); border-left: 4px solid var(--accent); padding: 15px; transform: translateX(200%); transition: 0.3s; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .toast.show { transform: translateX(0); }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2 style="color:var(--accent); margin-bottom:30px; text-align:center;">EMS <span style="font-weight:lighter;">COMMAND</span></h2>
+    <button class="nav-btn active" onclick="switchView('dashboard')"><i class="fa-solid fa-map"></i> Live Map</button>
+    <button class="nav-btn" onclick="switchView('fleet')"><i class="fa-solid fa-truck-medical"></i> Fleet Status</button>
+    <button class="nav-btn" onclick="switchView('inventory')"><i class="fa-solid fa-box"></i> Inventory</button>
+    <button class="nav-btn" onclick="switchView('stats')"><i class="fa-solid fa-chart-pie"></i> Analytics</button>
+    <div style="flex:1"></div>
+    <button class="nav-btn" onclick="switchView('qms')" style="border-top:1px solid var(--border); color:var(--accent);"><i class="fa-solid fa-book-medical"></i> QMS Report</button>
+</div>
+
+<div class="main-content">
+    
+    <div id="view-dashboard" class="view-section active-view">
+        <div style="height:70px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:var(--bg-panel); border-bottom:1px solid var(--border);">
+            <div id="status-display">System Active</div>
+            <div style="display:flex; flex-direction:column; align-items:center; width:200px;">
+                <div style="font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">Traffic Density</div>
+                <div style="display:flex; align-items:center; width:100%; gap:10px;">
+                    <i class="fa-solid fa-road" style="color:var(--success); font-size:12px;"></i>
+                    <input type="range" id="traffic-slider" min="30" max="250" value="60" step="10">
+                    <i class="fa-solid fa-traffic-light" style="color:var(--danger); font-size:12px;"></i>
+                </div>
+            </div>
+            <button onclick="createIncident()" style="background:var(--danger); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">
+                <i class="fa-solid fa-bell"></i> TRIGGER CALL (911)
+            </button>
+        </div>
+        
+        <div id="map-container">
+            <div class="map-marker" style="top:50%; left:50%; z-index:5;">
+                <div style="background:var(--accent); padding:5px 10px; border-radius:4px; font-weight:bold; font-size:12px; color:white;">HQ</div>
+            </div>
+            <div id="simulation-layer"></div>
+        </div>
+        
+        <div class="log-panel">
+            <table id="logTable">
+                <thead>
+                    <tr>
+                        <th width="10%">ID</th>
+                        <th width="15%">T0 (Call)</th>
+                        <th width="15%">T1 (Disp)</th>
+                        <th width="15%">T2 (Scene)</th>
+                        <th width="15%">T3 (Close)</th>
+                        <th width="10%">Status</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="view-fleet" class="view-section">
+        <h1>Fleet Readiness</h1>
+        <div id="fleet-grid" class="card-grid"></div>
+    </div>
+
+    <div id="view-inventory" class="view-section">
+        <h1>Inventory Management</h1>
+        <div class="card">
+            <h3>Restock Supplies</h3>
+            <select id="inv-select" style="padding:10px; width:100%; background:#000; color:white; border:1px solid var(--border); margin-bottom:10px;">
+                <option value="bandages">Trauma Bandages</option>
+                <option value="oxygen">Oxygen Tanks</option>
+            </select>
+            <input type="number" id="inv-qty" value="10" style="padding:10px; width:100%; background:#000; color:white; border:1px solid var(--border); margin-bottom:10px;">
+            <button onclick="addInventory()" style="width:100%; padding:10px; background:var(--success); color:white; border:none; font-weight:bold; cursor:pointer;">ADD STOCK</button>
+            <br><br>
+            <table id="inventory-table"><thead><tr><th>Item</th><th>Qty</th><th>Status</th></tr></thead><tbody></tbody></table>
+        </div>
+    </div>
+
+    <div id="view-stats" class="view-section">
+        <h1>Performance Analytics (ISO 9001)</h1>
+        <p style="color:#94a3b8; margin-bottom:20px;">Evidence-based decision making metrics derived from operational logs.</p>
+        
+        <div class="card-grid" style="margin-bottom:20px; grid-template-columns: repeat(4, 1fr);">
+            <div class="kpi-box">
+                <div class="kpi-val" id="kpi-calls">0</div>
+                <div class="kpi-lbl">Total Incidents</div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-val" id="kpi-response">0s</div>
+                <div class="kpi-lbl">Avg Response (T0-T2)</div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-val" id="kpi-compliance">100%</div>
+                <div class="kpi-lbl">Fleet Compliance</div>
+            </div>
+            <div class="kpi-box">
+                <div class="kpi-val" id="kpi-stock">OK</div>
+                <div class="kpi-lbl">Stock Health</div>
+            </div>
+        </div>
+
+        <div class="card-grid">
+            <div class="card"><canvas id="chart-vol"></canvas></div>
+            <div class="card"><canvas id="chart-fleet"></canvas></div>
+        </div>
+    </div>
+
+    <div id="view-qms" class="view-section">
+        <div class="qms-doc">
+            <h1 style="color:var(--accent); border-bottom:2px solid var(--accent); padding-bottom:15px;">Quality Management System (QMS) Report</h1>
+            
+            <h2>1. Applied ISO Standards</h2>
+            
+            <h3>ISO 9001:2015 - Quality Management Systems</h3>
+            <p>
+                This application adheres to the <strong>Process Approach</strong> and <strong>Evidence-Based Decision Making</strong> principles of ISO 9001. 
+                The system ensures consistent service delivery by standardizing the incident lifecycle and uses real-time data logs (Analytics Page) to monitor performance. 
+                Key focus areas include:
+            </p>
+            <ul>
+                <li><strong>Resource Management:</strong> Ensuring adequate infrastructure (Ambulances) and environment (Supplies) for operation.</li>
+                <li><strong>Operational Planning:</strong> Defining criteria for dispatch (Fuel > 30%, Health > 50%).</li>
+                <li><strong>Documented Information:</strong> Immutable logging of all timestamp data (T_0 \to T_3).</li>
+            </ul>
+
+            <h3>ISO 22320 - Emergency Management</h3>
+            <p>
+                Specific to the domain, the system implements ISO 22320 guidelines for <strong>Incident Response</strong>. 
+                It establishes a clear <strong>Command and Control</strong> structure where the dispatcher has full situational awareness via the "Live Map". 
+                It also manages <strong>Operational Information</strong> by synchronizing status updates (Pending, Dispatched, On Scene) across all terminals instantly.
+            </p>
+
+            <h2>2. The QMS Process Lifecycle</h2>
+            <p>The system automates the following End-to-End (E2E) flow for every incident:</p>
+            
+            <div class="qms-process-step">
+                <div class="step-num">1</div>
+                <div>
+                    <strong>Incident Generation (T_0):</strong> A call is received. The system logs the timestamp and GPS coordinates. If no units are available, it enters the FIFO <strong>Backlog Queue</strong>.
+                </div>
+            </div>
+            <div class="qms-process-step">
+                <div class="step-num">2</div>
+                <div>
+                    <strong>Resource Evaluation:</strong> The system scans the fleet. A unit is only deemed "Ready" if it passes the ISO 9001 compliance check (Fuel, Health, Inventory).
+                </div>
+            </div>
+            <div class="qms-process-step">
+                <div class="step-num">3</div>
+                <div>
+                    <strong>Dispatch & Response (T_1 \to T_2):</strong> The optimal unit is assigned. Travel time is calculated based on traffic density (simulated via Slider). Arrival is verified via telemetry.
+                </div>
+            </div>
+            <div class="qms-process-step">
+                <div class="step-num">4</div>
+                <div>
+                    <strong>Closure & Logistics (T_3):</strong> Upon mission completion, the unit returns to HQ. Resources (Fuel, Supplies) are automatically deducted, triggering a need for logistical maintenance.
+                </div>
+            </div>
+
+            <h2>3. Continuous Improvement (Challenges & Resolutions)</h2>
+
+            <div class="qms-highlight">
+                <h3 style="color:var(--danger); margin-top:0;"><i class="fa-solid fa-triangle-exclamation"></i> Challenge A: Resource Integrity (ISO 9001 Clause 7.1.3)</h3>
+                <p><strong>The Issue:</strong> During initial validation, fleet units could execute "Restock" even when hospital inventory was zero. This created negative integers in the database, violating the integrity of the supply chain data.</p>
+                <p><strong>The Resolution:</strong> A backend validation guardrail was implemented. The API now queries stock levels <em>before</em> transaction approval. If Stock &le; 0, the request is rejected (Error 400), enforcing physical reality constraints.</p>
+            </div>
+
+            <div class="qms-highlight-warn">
+                <h3 style="color:var(--warning); margin-top:0;"><i class="fa-solid fa-layer-group"></i> Challenge B: Operational Continuity (ISO 22320)</h3>
+                <p><strong>The Issue:</strong> When call volume (N) exceeded fleet capacity (M), the system risked a "Denial of Service" failure where calls were dropped.</p>
+                <p><strong>The Resolution:</strong> An asynchronous <strong>FIFO Backlog Queue</strong> was implemented. Excess calls are assigned a <code>PENDING</code> status and visualized on the map. The system continuously polls for fleet availability, automatically assigning the oldest pending call to the next available unit. This ensures zero data loss during surge events.</p>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<div id="toast" class="toast"><h4 style="margin:0;">Alert</h4><p id="toast-msg" style="margin:5px 0 0 0;">Msg</p></div>
+
+<script>
+    const STANDARDS = { fuelMin: 30, healthMin: 50 };
+
+    let state = { ambulances: [], inventory: {}, logs: [], active_incidents: [] };
+    let processingIds = new Set();
+    let isPolling = false;
+    let charts = {};
+
+    function init() {
+        initCharts();
+        fetchData();
+        setInterval(() => { if (!isPolling) fetchData(); }, 1000); 
+    }
+
+    async function fetchData() {
+        isPolling = true;
+        try {
+            const res = await fetch('/api/state');
+            const data = await res.json();
+            
+            state.ambulances = data.ambulances;
+            state.inventory = data.inventory;
+            state.logs = data.logs; 
+            state.active_incidents = data.active_incidents; 
+
+            renderFleet();
+            renderInventory();
+            renderLogs();
+            updateStatusHeader();
+            updateAnalytics(); 
+            renderMapMarkers(); 
+            processQueue();
+
+            state.ambulances.forEach(amb => {
+                if (!document.getElementById('marker-' + amb.id)) createCarMarker(amb.id);
+            });
+
+        } catch (e) { console.error(e); }
+        isPolling = false;
+    }
+
+    function updateAnalytics() {
+        document.getElementById('kpi-calls').innerText = state.logs.length;
+        let totalTime = 0; let count = 0;
+        state.logs.forEach(l => {
+            if (l.t2 && l.t0) {
+                totalTime += (new Date(l.t2) - new Date(l.t0)) / 1000;
+                count++;
+            }
+        });
+        document.getElementById('kpi-response').innerText = (count > 0 ? Math.round(totalTime / count) : 0) + "s";
+
+        const compliant = state.ambulances.filter(a => checkCompliance(a).isCompliant).length;
+        const total = state.ambulances.length;
+        document.getElementById('kpi-compliance').innerText = (total > 0 ? Math.round((compliant / total) * 100) : 0) + "%";
+
+        const lowStock = Object.values(state.inventory).some(i => i.qty < i.min_qty);
+        const stockEl = document.getElementById('kpi-stock');
+        stockEl.innerText = lowStock ? "LOW" : "GOOD";
+        stockEl.style.color = lowStock ? "var(--danger)" : "var(--success)";
+
+        if(charts.vol) {
+            const pending = state.active_incidents.filter(i => i.status === 'PENDING').length;
+            const active = state.active_incidents.filter(i => i.status !== 'PENDING').length;
+            charts.vol.data.datasets[0].data = [active, pending]; charts.vol.update();
+            charts.fleet.data.datasets[0].data = [compliant, total - compliant]; charts.fleet.update();
+        }
+    }
+
+    function renderMapMarkers() {
+        state.active_incidents.forEach(inc => {
+            let el = document.getElementById('inc-' + inc.id);
+            if (!el) {
+                el = document.createElement('div'); el.id = 'inc-' + inc.id; 
+                el.className = 'map-marker incident-icon';
+                el.innerHTML = '<i class="fa-solid fa-fire-burner"></i>'; 
+                el.style.left = inc.x + '%'; el.style.top = inc.y + '%';
+                document.getElementById('simulation-layer').appendChild(el);
+            }
+            if (inc.status === 'PENDING') el.classList.add('pending');
+            else el.classList.remove('pending');
+        });
+        document.querySelectorAll('.incident-icon').forEach(el => {
+            const id = el.id.replace('inc-', '');
+            if (!state.active_incidents.find(i => i.id === id)) el.remove();
+        });
+    }
+
+    async function createIncident() {
+        const incId = 'INC-' + Math.floor(Math.random() * 9000 + 1000);
+        const x = Math.random() * 80 + 10;
+        const y = Math.random() * 80 + 10;
+        showToast(`911 Call: ${incId}`, 'warning');
+        await fetch('/api/incident', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create', id: incId, x: x, y: y }) });
+        fetchData();
+    }
+
+    function processQueue() {
+        const waiting = state.active_incidents.filter(i => i.status === 'PENDING');
+        waiting.forEach(incident => {
+            if (processingIds.has(incident.id)) return; 
+            const car = state.ambulances.find(a => a.status === 'IDLE' && checkCompliance(a).isCompliant && !processingIds.has('BUSY_' + a.id));
+            if (car) {
+                processingIds.add(incident.id);
+                processingIds.add('BUSY_' + car.id); 
+                startMission(car, incident);
+            }
+        });
+    }
+
+    async function startMission(unit, incident) {
+        showToast(`Dispatching ${unit.id}`, 'success');
+        await fetch('/api/incident', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action:'dispatch', id:incident.id, unit_id:unit.id }) });
+
+        const el = document.getElementById('marker-' + unit.id);
+        const icon = el.querySelector('.ambulance-icon');
+        icon.classList.add('busy');
+
+        moveElement(el, incident.x, incident.y, async () => {
+            await fetch('/api/incident', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action:'arrive', id:incident.id, unit_id:unit.id }) });
+            setTimeout(async () => {
+                await fetch('/api/incident', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action:'transport', id:incident.id, unit_id:unit.id }) });
+                const fireEl = document.getElementById('inc-' + incident.id);
+                if(fireEl) fireEl.style.display = 'none';
+
+                moveElement(el, 50, 50, async () => {
+                    await fetch('/api/incident', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action:'close', id:incident.id, unit_id:unit.id }) });
+                    icon.classList.remove('busy');
+                    processingIds.delete(incident.id);
+                    processingIds.delete('BUSY_' + unit.id);
+                    showToast(`${unit.id} Mission Complete`, 'success');
+                    fetchData();
+                });
+            }, 1500); 
+        });
+    }
+
+    function moveElement(el, x, y, callback) {
+        const trafficLevel = document.getElementById('traffic-slider').value;
+        const currentX = parseFloat(el.style.left || 50);
+        const currentY = parseFloat(el.style.top || 50);
+        const dist = Math.sqrt(Math.pow(x - currentX, 2) + Math.pow(y - currentY, 2));
+        const time = Math.round(dist * trafficLevel);
+
+        el.style.transition = `top ${time}ms ease-in-out, left ${time}ms ease-in-out`;
+        el.style.left = x + '%'; el.style.top = y + '%';
+        setTimeout(callback, time);
+    }
+
+    function renderLogs() {
+        const tb = document.getElementById('logTable').querySelector('tbody'); tb.innerHTML = '';
+        const fmt = t => t ? new Date(t).toLocaleTimeString('en-US', {hour12:false}) : '<span style="color:#555">-</span>';
+        state.logs.forEach(l => {
+            let statusBadge = l.status === 'CLOSED' ? '<span class="tag-pass">CLOSED</span>' : (l.status === 'PENDING' ? '<span class="tag-fail">PENDING</span>' : `<span class="tag-warn">${l.status}</span>`);
+            tb.innerHTML += `<tr><td style="font-weight:bold; color:#fff;">${l.id}</td><td>${fmt(l.t0)}</td><td>${fmt(l.t1)}</td><td>${fmt(l.t2)}</td><td>${fmt(l.t3)}</td><td>${statusBadge}</td></tr>`;
+        });
+    }
+
+    function checkCompliance(amb) {
+        let reasons = [];
+        if (amb.fuel < STANDARDS.fuelMin) reasons.push("Fuel Low");
+        if (amb.health < STANDARDS.healthMin) reasons.push("Damaged");
+        if (!amb.supplies_ok) reasons.push("No Supplies");
+        return { isCompliant: reasons.length === 0, reasons: reasons };
+    }
+
+    async function performAction(id, type) {
+        const res = await fetch('/api/maintenance', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ id: id, type: type }) });
+        const data = await res.json();
+        if (res.status === 400) showToast(data.message, 'danger'); 
+        else {
+            if (type === 'restock') showToast(`${id} Restocked`, 'success');
+            fetchData();
+        }
+    }
+
+    async function addInventory() {
+        await fetch('/api/inventory/add', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ item_key: document.getElementById('inv-select').value, qty: parseInt(document.getElementById('inv-qty').value) }) });
+        showToast("Added to Hospital Stock", "success");
+        fetchData();
+    }
+
+    function updateStatusHeader() {
+        const waiting = state.active_incidents.filter(i => i.status === 'PENDING').length;
+        const available = state.ambulances.filter(a => a.status === 'IDLE' && checkCompliance(a).isCompliant).length;
+        document.getElementById('status-display').innerHTML = `Ready Units: <span style="color:var(--success); font-weight:bold;">${available}</span> | Queue: <span style="color:${waiting>0?'var(--danger)':'#aaa'}; font-weight:bold;">${waiting}</span>`;
+    }
+
+    function renderFleet() {
+        const grid = document.getElementById('fleet-grid'); grid.innerHTML = '';
+        state.ambulances.forEach(amb => {
+            const c = checkCompliance(amb);
+            const fuelAlert = amb.fuel < STANDARDS.fuelMin;
+            const hpAlert = amb.health < STANDARDS.healthMin;
+            
+            grid.innerHTML += `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0;">${amb.id}</h3>
+                    ${c.isCompliant ? '<span class="tag-pass">READY</span>' : '<span class="tag-fail">UNFIT</span>'}
+                </div>
+                <div style="font-size:11px; color:#aaa; margin-bottom:10px;">Status: ${amb.status}</div>
+                <div style="font-size:12px;">
+                    <div style="display:flex; justify-content:space-between;"><span>Fuel (${amb.fuel}%)</span></div>
+                    <div class="bar-container"><div class="bar-fill" style="width:${amb.fuel}%; background:${fuelAlert?'var(--danger)':'var(--success)'}"></div></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Health (${amb.health}%)</span></div>
+                    <div class="bar-container"><div class="bar-fill" style="width:${amb.health}%; background:${hpAlert?'var(--danger)':'var(--success)'}"></div></div>
+                </div>
+                <div style="display:flex; gap:5px; margin-top:15px;">
+                    <button class="maint-btn ${fuelAlert?'btn-critical':''}" onclick="performAction('${amb.id}', 'refuel')">Refuel</button>
+                    <button class="maint-btn ${hpAlert?'btn-critical':''}" onclick="performAction('${amb.id}', 'repair')">Repair</button>
+                    <button class="maint-btn" onclick="performAction('${amb.id}', 'restock')">Stock</button>
+                </div>
+            </div>`;
+        });
+    }
+
+    function renderInventory() {
+        const tb = document.getElementById('inventory-table').querySelector('tbody'); tb.innerHTML = '';
+        Object.values(state.inventory).forEach(i => {
+            tb.innerHTML += `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.qty>=i.min_qty?'<span class="tag-pass">OK</span>':'<span class="tag-fail">LOW</span>'}</td></tr>`;
+        });
+    }
+
+    function initCharts() {
+        charts.vol = new Chart(document.getElementById('chart-vol'), {type:'bar', data:{labels:['Active', 'Pending'], datasets:[{label:'Calls', data:[0,0], backgroundColor:['#3b82f6','#f59e0b']}]}});
+        charts.fleet = new Chart(document.getElementById('chart-fleet'), {type:'doughnut', data:{labels:['Compliant', 'Non-Compliant'], datasets:[{data:[1,1], backgroundColor:['#10b981','#ef4444']}]}});
+    }
+
+    function switchView(v) {
+        document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active-view'));
+        document.getElementById('view-'+v).classList.add('active-view');
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+
+    function showToast(m, t) {
+        const el = document.getElementById('toast'); document.getElementById('toast-msg').innerText = m;
+        el.style.borderLeftColor = t==='danger'?'var(--danger)':'var(--success)';
+        el.classList.add('show'); setTimeout(()=>el.classList.remove('show'), 3000);
+    }
+
+    function createCarMarker(id) {
+        const el = document.createElement('div'); el.id = 'marker-'+id; el.className = 'map-marker';
+        el.style.top='50%'; el.style.left='50%';
+        el.innerHTML=`<i class="fa-solid fa-truck-medical ambulance-icon"></i><span style="font-size:10px; background:black; color:white; padding:2px;">${id}</span>`;
+        document.getElementById('simulation-layer').appendChild(el);
+    }
+
+    init();
+</script>
+</body>
+</html>
