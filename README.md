@@ -54,7 +54,7 @@ cd ems-iso-cmd
 pip install requirements.txt
 ```
 
-### 4. Run the Application
+### 3. Run the Application
 ```bash
 python app.py
 ```
